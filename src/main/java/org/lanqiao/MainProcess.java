@@ -1,5 +1,7 @@
 package org.lanqiao;
 
+import org.lanqiao.util.FileUtil;
+
 public class MainProcess {
             // 对args参数进行一定的处理和规范定义
     
@@ -19,7 +21,7 @@ public class MainProcess {
             //扫尾操作
             //7 评分发送报告
           
-
+            FileUtil.getAllPaths();
         }
 
 }

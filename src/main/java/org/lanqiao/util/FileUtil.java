@@ -16,149 +16,35 @@ import java.util.*;
  * # 微信机器人  machinekey=0346fec1-d978-4968-a8a5-81dd0281a7ce
  */
 public class FileUtil {
-        public static String baseUrl ="http://127.0.0.1:8080";
-        public static String [] modulenames;
-        public static String [] packagenames = {"org.lanqiao.entity","org.lanqiao.service","org.lanqiao.controller","org.lanqiao.dao"};
-        public static String [] webrequesturls;
-        public static String [] ssmrequesturls;
-        public static String [] bootrequesturls;
-        public static String [] testwebrequesturls;
-        public static String [] testssmrequesturls;
-        public static String [] testbootrequesturls;
-        public static String [] webactionmethods;
-        public static String [] ssmactionmethods;
-        public static String [] bootactionmethods;
-        public static String [] allRequestUrl;
-        public static String  machinekey;
-        public static String  dbname ;
-        public static String  rediskey ;
-        public static String  redisLv2key ;
-        public static String  logpath ;
-        public static String  gitlogpath ;
-        public static String  bashPackageName ;
-        public static int tablesize ;
-        public static int minsqlcount ;
-        public static String [] tablenames;
-        public static int [] checkpointscores;
-        public static int [] requesturlscores;
-        public static boolean [] testregex;
-        public static Integer [] skillpointids;
-        public static double [] skillpointpassornots;
-        public static String [][] tablesfieldnames;
-       
-        public static String [] modulejars;
-        public static String startupTomcat;
-        public static String shutdownTomcat;
-        public static String scoreEnv; //上报分数的环境
-        public static String userIdEnv; // 获取用户id的环境
-        public static String islocaltest; // 是否本地测试
-        public static String dbbuildcommand; // 是否需要初始化数据
-        public static String [] dbactions;
-        public static String [] dbcommands = new String[3];
-        public static String [] unittestmethods;
-        public static String [] unittestdao;
-        public static String [] unittestservice;
-        public static String  unitestpackage;
-        public static String [] loglevel;
-        public static String  examname;
-        public static String  redissplit;
-
+        private static String base_path;
+        private static String [] all_need_files;
+        private static int steps;
+        private static int []step_score;
+        private static Map<String,String []> step_key_fun_map = new HashMap<String,String []>();
+        private static String []all_need_reflect_class;
+        private static String before;
+        private static String type;
         static{
                 // 读取库名  表名  字段名  全路径类名（含包名）
                 Properties prop =new Properties();
                 try {
-
-                        prop.load(FileUtil.class.getClassLoader().getResourceAsStream("baseSettings.properties"));
-                         prop.load(FileUtil.class.getClassLoader().getResourceAsStream("dbSettings.properties"));
-                        tablenames=prop.getProperty("tablenames").trim().split(",");
-                        tablesize= tablenames.length;
-                        dbname=prop.getProperty("dbname").trim();
-                        rediskey=prop.getProperty("rediskey").trim();
-
-                        unitestpackage=prop.getProperty("unitestpackage").trim();
-                        redisLv2key=prop.getProperty("redisLv2key").trim();
-                        bashPackageName=prop.getProperty("bashPackageName").trim();
-                        dbbuildcommand=prop.getProperty("dbbuildcommand").trim();
-
-                        logpath=prop.getProperty("logpath").trim();
-                        gitlogpath=prop.getProperty("gitlogpath").trim();
-                        minsqlcount=Integer.parseInt(prop.getProperty("minsqlcount").trim());
-                        machinekey=prop.getProperty("machinekey").trim();
-                        tablenames=prop.getProperty("tablenames").trim().split(",");
-
-                        unittestmethods=prop.getProperty("unittestmethods").trim().split(",");
-                        unittestdao=prop.getProperty("unittestdao").trim().split(",");
-                        unittestservice=prop.getProperty("unittestservice").trim().split(",");
-                        String [] cs =prop.getProperty("checkpointscores").trim().split(",");
-                        String [] rs =prop.getProperty("requesturlscores").trim().split(",");
-                        String [] tr =prop.getProperty("testregex").trim().split(",");
-                        checkpointscores = new int[cs.length];
-                        requesturlscores = new int [rs.length];
-                        testregex = new boolean[tr.length];
-                        islocaltest=prop.getProperty("islocaltest").trim();
-                        for(int i=0;i<cs.length;i++){
-                                checkpointscores[i]=Integer.parseInt(cs[i]);
-                        }
-                        for(int i=0;i<rs.length;i++){
-                                requesturlscores[i]=Integer.parseInt(rs[i]);
-                        }
-                        for(int i=0;i<tr.length;i++){
-                                testregex[i]=Boolean.parseBoolean(tr[i]);
-                        }
-                        String [] si =prop.getProperty("skillpointid").trim().split(",");
-                        skillpointids = new Integer[si.length];
-                        for(int i=0;i<si.length;i++){
-                                skillpointids[i]=Integer.valueOf(si[i]);
-                        }
-                        String [] pn =prop.getProperty("skillpointpassornot").trim().split(",");
-                        skillpointpassornots = new double[pn.length];
-                        for(int i=0;i<pn.length;i++){
-                                skillpointpassornots[i]=Double.parseDouble(pn[i]);
-                        }
-                        String [] mj =prop.getProperty("modulejar").trim().split(",");
-                        modulejars = new String[mj.length];
-                        for(int i=0;i<mj.length;i++){
-                                modulejars[i]=mj[i];
-                        }
-                        modulenames=prop.getProperty("modulenames").trim().split(",");
-                        webrequesturls=prop.getProperty("webrequesturls").trim().split(",");
-                        ssmrequesturls=prop.getProperty("ssmrequesturls").trim().split(",");
-                        bootrequesturls=prop.getProperty("bootrequesturls").trim().split(",");
-                        testwebrequesturls=prop.getProperty("testwebrequesturls").trim().split(",");
-                        testssmrequesturls=prop.getProperty("testssmrequesturls").trim().split(",");
-                        testbootrequesturls=prop.getProperty("testbootrequesturls").trim().split(",");
-                        webactionmethods=prop.getProperty("webactionmethods").trim().split(",");
-                        ssmactionmethods=prop.getProperty("ssmactionmethods").trim().split(",");
-                        bootactionmethods=prop.getProperty("bootactionmethods").trim().split(",");
-
-                        loglevel =prop.getProperty("loglevel").trim().split(",");
-
-                        allRequestUrl = new String[webrequesturls.length+ssmrequesturls.length+ bootrequesturls.length];
-                        System.arraycopy(webrequesturls, 0, allRequestUrl, 0, webrequesturls.length);
-                        System.arraycopy(ssmrequesturls, 0, allRequestUrl, webrequesturls.length,ssmrequesturls.length);
-                        System.arraycopy(bootrequesturls, 0, allRequestUrl, ssmrequesturls.length+webrequesturls.length, bootrequesturls.length);
-                        packagenames=prop.getProperty("packagenames").trim().split(",");
-                        tablesfieldnames=new String[tablesize][];
-                        for(int i=0;i<tablesize;i++){
-                                tablesfieldnames[i]= prop.getProperty("table"+i+"fieldnames").trim().split(",");
-                        }
-
-                        dbactions= prop.getProperty("dbactions").trim().split(",");
-                        for(int i=0;i<3;i++){
-                                dbcommands[i]= prop.getProperty("dbcommand"+i).trim();
-                        }
-
-                       
-                        //    exam_id = prop.getProperty("exam_id").trim();
-                        //    container_id = prop.getProperty("container_id").trim();
-                        startupTomcat = prop.getProperty("startuptomcat").trim();
-                        shutdownTomcat = prop.getProperty("shutdowntomcat").trim();
-                        scoreEnv = prop.getProperty("scoreenv").trim();
-                        userIdEnv = prop.getProperty("useridenv").trim();
-
-                        examname=prop.getProperty("examname").trim();
-                        redissplit=prop.getProperty("redissplit").trim();
-
+                    prop.load(FileUtil.class.getClassLoader().getResourceAsStream("baseSetings.properties"));
+                    prop.load(FileUtil.class.getClassLoader().getResourceAsStream("funSetings.properties"));
+                    base_path = prop.getProperty("base_path");
+                    all_need_files = prop.getProperty("all_need_files").split(",");
+                    steps = Integer.parseInt(prop.getProperty("steps"));
+                    step_score = new int[steps];
+                    for(int i =0;i<steps;i++){
+                       step_score[i]=Integer.parseInt(prop.getProperty("step_score").split(",")[i]);
+                  
+                       step_key_fun_map.put("setp"+i,prop.getProperty("setp"+i).split(":"));
+                    }
+                 
+                    all_need_reflect_class = prop.getProperty("all_need_reflect_class").split(",");
+                    before = prop.getProperty("before");
+                    type = prop.getProperty("type");
+             
+                    
                 } catch (IOException e) {
                         System.out.println("静态加载出错");
                 }
@@ -168,13 +54,7 @@ public class FileUtil {
 
         public static  Map<String,List<String>> pathNamesMap;
         public static void getAllPaths (){
-                pathNamesMap = new HashMap<String,List<String>> ();
-                for(String name:modulenames){
-                        List<String> pathNames = new ArrayList<>();
-                        pathNamesMap.put(name,pathNames);
-                        File dir = new File("/home/project/IdeaProjects/"+name+"/src");
-                        findJavaFileList(dir,pathNames);
-                }
+               
         }
 
         /**

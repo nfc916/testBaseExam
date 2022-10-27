@@ -148,10 +148,6 @@ public class ClassUtil implements ClassVisitor{
             jar.close();
         } catch (Exception e) {
             e.printStackTrace();
-            if(jarPath.contains(FileUtil.modulenames[0])){
-                System.out.println("未找到检测的entity文件");
-              
-            }
         }
     }
 
