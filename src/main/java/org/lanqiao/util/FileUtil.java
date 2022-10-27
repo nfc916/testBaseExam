@@ -16,14 +16,15 @@ import java.util.*;
  * # 微信机器人  machinekey=0346fec1-d978-4968-a8a5-81dd0281a7ce
  */
 public class FileUtil {
-        private static String base_path;
-        private static String [] all_need_files;
-        private static int steps;
-        private static int []step_score;
-        private static Map<String,String []> step_key_fun_map = new HashMap<String,String []>();
-        private static String []all_need_reflect_class;
-        private static String before;
-        private static String type;
+        public static String base_path;
+        public static String [] all_need_files;
+        public static int steps;
+        public static int []step_score;
+        public static Map<String,String []> step_key_fun_map = new HashMap<String,String []>();
+        public static String []all_need_reflect_class;
+        public static String before;
+        public static String type;
+        public static String workdir;
         static{
                 // 读取库名  表名  字段名  全路径类名（含包名）
                 Properties prop =new Properties();
@@ -43,39 +44,13 @@ public class FileUtil {
                     all_need_reflect_class = prop.getProperty("all_need_reflect_class").split(",");
                     before = prop.getProperty("before");
                     type = prop.getProperty("type");
-             
-                    
+                    workdir = prop.getProperty("workdir");
                 } catch (IOException e) {
                         System.out.println("静态加载出错");
                 }
-                getAllPaths();
 
         }
 
-        public static  Map<String,List<String>> pathNamesMap;
-        public static void getAllPaths (){
-               
-        }
-
-        /**
-         * 读取目录下的所有 Java 类文件
-         * @param dir 目录
-         * @return
-         */
-        public static void findJavaFileList(File dir,List<String> pathNames) {
-                if (!dir.exists() || !dir.isDirectory()) {
-                        return;
-                }
-                String[] files = dir.list();
-                for (int i = 0; i < files.length; i++) {
-                        File file = new File(dir, files[i]);
-                        if (file.isFile()&&file.getName().endsWith(".java")) {
-                                pathNames.add(dir + File.separator + file.getName());
-                        } else {// 如果是目录
-                                findJavaFileList(file,pathNames);
-                        }
-                }
-        }
         /**
          * 读取指定目录下的是否存在指定文件
          * @return

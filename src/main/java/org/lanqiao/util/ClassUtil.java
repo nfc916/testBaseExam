@@ -1,210 +1,110 @@
 package org.lanqiao.util;
 
-
-import org.objectweb.asm.*;
-import java.io.InputStream;
+import java.io.*;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.lang.reflect.*;
 import java.util.*;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-
-import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
-
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 解析类名、方法是否符合规范
  */
-public class ClassUtil implements ClassVisitor{
-    /**
-     *   获取流程 ： 考生相关依赖需要打包，
-     *   明明存在，反射时确提示ClassNotFoundException
-     *      1 . 不同pom的依赖
-     *      2 . 引用 war 包时应分别打包成 war 和 jar ，通过配置pom.xml
-     *      3.  引用 springBoot 时打包的 Springboot-maven plugin 需要删除后再打
-     * @param jarNames 架包所有路径
-     * @return
-     */
-    static Map<String,String> methodClassMap =new HashMap<>();
-    static Map<String,String> fieldClassMap =new HashMap<>();
-    public static Map<String,Integer> constructClassMap =new HashMap<>();
-    public static int constructSize=0;
-    static boolean isMethod =false;
-    //////////////////////////////////
+public class ClassUtil {
 
-    /**
-     * 是否使用某项技术
-     * @param JarName
-     * @param isWeb
-     * @return  0 符合要求，  1 JDBC 不是， 2 Servlet 不是，  3 多编程  4 . MyBatis不是 ，5 Spring不是，  6 未引用A模块，  其它的组合 如：12 13 34 125 345
-     */
-    public static String isUseSkill(String JarName,boolean isWeb){
-        String basePath ="javap -v jar:file://"+JarName+"!/";
-        InputStream fis = null;
-        int isJdbc =1; // statement  connection  resultset  DriverManager
-        int isServlet=2;
-        int isUseAmodule=0;
-        try {
-            JarFile jar =new JarFile(JarName);
-            Iterator<JarEntry> je = jar.stream().iterator();
-            ClassReader cr =null;
-            while(je.hasNext()){
-                JarEntry jae = je.next();
-                if(jae.getName().endsWith(".class")&&jae.getName().startsWith("org/lanqiao")){
-                    fis= jar.getInputStream(jae);
-                    cr =new ClassReader(fis);
-                    if(isWeb){
-                        boolean jdbc1 =false;
-                        boolean jdbc2 =false;
-                        boolean jdbc3 =false;
-                    
-                        // TODO 是否JDBC  需要优化   已经优化
-                        if(jae.getName().startsWith("org/lanqiao/dao/")||jae.getName().startsWith("org/lanqiao/utils/")){
-                            for (String s : CommandUtil.getExecResult(basePath + jae.getName())) {
-                                if(s.contains("DriverManager")){
-                                    jdbc1=true;
-                                }
-                                /*if(s.contains("java/sql/Connection")){
-                                    jdbc2=true;
-                                }*/
-                                if(s.contains("Connection")){
-                                    jdbc2=true;
-                                }
-                                if(s.contains("Statement")){
-                                    jdbc3=true;
-                                }
-                                /*if(s.contains("java/sql/ResultSet")){
-                                    jdbc4=true;
-                                }*/
-                            }
-                            if(jdbc1&&jdbc2&&jdbc3){
-                                 isJdbc=0;
-                            }
-                        }
 
-                        //是否Servlet
-                        if(jae.getName().startsWith("org/lanqiao/controller/")||jae.getName().startsWith("org/lanqiao/servlet/")){
-                            if(cr.getSuperName().equals("javax/servlet/http/HttpServlet")||cr.getSuperName().equals("javax/servlet/http/GenericServlet")){
-                                 isServlet=0;
-                            }
-                        }
-                        //是否安全
-                        if(jae.getName().startsWith("org/lanqiao/service/")||jae.getName().startsWith("org/lanqiao/service/impl")){
-                            for (String s : CommandUtil.getExecResult(basePath + jae.getName())) {
-                                if(s.contains("ACC_SYNCHRONIZED")||s.contains("monitorenter")){
-                                   
-                                }
-                            }
-                        }
-                    }else {
-                        //是否mybatis
-                        //是否springmvc
+        public static boolean doCheck(String [] kv){
+            Map map = getRealInfo(kv);
+           // System.out.println(map);
+           try {
+            // 创建配置文件对应的 File 对象
+            File file = new File("object.properties");
+            // 创建输入流，读取文件
+           // InputStream is =  new FileInputStream(file);
+            OutputStream os =  new FileOutputStream(file);
+            // 创建 Properties 对象
+            Properties prop = new Properties();
+            // 将配置文件加载入 Properties 对象
+          //  prop.load(is);
+            // 读取配置文件中 name 字段的值
+            prop.setProperty("id", "2");
+            prop.setProperty("name", "mark");
+            prop.setProperty("className","org.lanqiao.entity.Person");
+            prop.store(os,null);
+            Class obj = Class.forName("org.lanqiao.main.CreateObject");
+            Method method =  obj.getMethod("createObject");
 
-                    }
-                    //是否引用 A 模块
-                    if(jae.getName().startsWith("org/lanqiao/entity")){
-                        isUseAmodule=6;
-                    }
-
-                }
+            Object result = method.invoke(obj.newInstance());
+            if(result==null){
+                System.out.println("结果不正确哦，返回的对象不能为空");
+                return false;
             }
-            jar.close();
+            Class obj2 = Class.forName("org.lanqiao.entity.Person");
+            if(result.getClass()!=obj2){
+                System.out.println("结果不正确哦，返回的对象不符合题目要求");
+                return false;
+            }
+
+            Field[] fs = obj2.getDeclaredFields();
+            for(Field f :fs ){
+                f.setAccessible(true);
+                if(!f.get(result).toString().equals(prop.get(f.getName()).toString())){
+                     System.out.println("结果不正确哦，字段的处理没有通用性哦");
+                     return false;
+                }        
+            }
+           return true;
+        } catch (RuntimeException e) {
+           System.out.println(e.getMessage().equals("null")?"代码有引起空指针的地方需要处理":e.getMessage());
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            System.out.println("请不要修改配置文件名称");
+        } catch (ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            System.out.println("请不要修改类名或包名"+e.getMessage());
+        } catch (NoSuchMethodException e) {
+            // TODO Auto-generated catch block
+            System.out.println("请不要修改类中的方法名");
+        } catch (IllegalAccessException e) {
+           
+        } catch (InvocationTargetException e) {
+           
+        } catch (InstantiationException e) {
+            // TODO Auto-generated catch block
+            System.out.println("请不要修改类中的构造方法或确保存在无参构造");
         } catch (Exception e) {
-            System.out.println("技能检测异常：原因"+e.getMessage());
+            // TODO Auto-generated catch block
+            System.out.println("请确认代码是否符合题目要求");
+        } 
+
+            return false;
         }
 
-        return isWeb?isJdbc*1000+isServlet*100+isUseAmodule+"":"";
+        /**
+         * 1-int,admin-String,3-long,4.5-double: new Person
+         * 值1-数据类型，值2-数据类型....: 数据类型 
+         * @param kv
+         * @return
+         */
+        private static Map getRealInfo(String [] kv){
+            Map map =new HashMap();
+            if(kv[0].equals("void") ){
 
-    }
+            }else if(kv[0].startsWith("new") ){
 
-    public static Map<String,String> getClassMethods(List<String> jarNames,boolean flag){
-        isMethod=flag;
-        for(String jarpath:jarNames){
-          getClassMethodsByAsm(jarpath);
-        }
-        if(isMethod)
-            return methodClassMap;
-        else
-            return fieldClassMap;
-    }
 
-    public static void getClassMethodsByAsm(String jarPath){
-
-        InputStream fis = null;
-        try {
-            JarFile jar =new JarFile(jarPath);
-            Iterator<JarEntry> je = jar.stream().iterator();
-            ClassReader cr =null;
-            while(je.hasNext()){
-                JarEntry jae = je.next();
-                if(jae.getName().endsWith(".class")&&jae.getName().startsWith(isMethod?"org/lanqiao":"org/lanqiao/entity")){
-                    if(!isMethod){
-                        constructSize++;
-                    }
-                    fis= jar.getInputStream(jae);
-                    cr =new ClassReader(fis);
-                    cr.accept(new ClassUtil(), 0);
-
-                }
             }
-            jar.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+            if(kv[1].equals("void") ){
 
-    @Override
-    public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        //System.out.println("版本："+version+",权限："+access+",名称："+name+",参数："+signature+",父类："+superName+"，接口："+ Arrays.toString(interfaces));
-        cname=name.replace("/",".");
-    }
+            }else if(kv[1].startsWith("new") ){
 
-    @Override
-    public void visitSource(String source, String debug) {
 
-    }
-
-    @Override
-    public void visitOuterClass(String owner, String name, String desc) {
-
-    }
-
-    @Override
-    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        return null;
-    }
-
-    @Override
-    public void visitAttribute(Attribute attr) {
-
-    }
-
-    @Override
-    public void visitInnerClass(String name, String outerName, String innerName, int access) {
-
-    }
-
-    @Override
-    public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
-        //System.out.println("字段名："+name+",权限："+access+",描述："+desc+",参数："+signature+ ACC_PRIVATE);
-        if(!isMethod&&!name.startsWith("<")&&access!=ACC_PRIVATE){
-            fieldClassMap.put(cname + "#" + name, cname);
-        }
-        return null;
-    }
-    String cname =null;
-    @Override//org.lanqiao.utils.DtoUtil#fail-9org.lanqiao.utils.DtoUtil
-    public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-       // System.out.println("方法名："+name+",权限："+access+",描述："+desc+",参数："+signature);
-            if(!isMethod&&name.startsWith("<init>")&&desc.equals("()V")){
-                constructClassMap.put(cname + "#" + name,1);
             }
 
-            if(isMethod&&!name.startsWith("<"))
-                methodClassMap.put(cname + "#" + name, cname);
-        return null;
-    }
+            System.out.println(Arrays.toString(kv)+": length is " + kv.length);
+            return map;
+        }
 
-    @Override
-    public void visitEnd() {
-
-    }
+  
 }
